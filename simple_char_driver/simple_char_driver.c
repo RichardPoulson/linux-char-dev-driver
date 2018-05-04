@@ -32,6 +32,7 @@ MODULE_INFO(intree, "Y");
 
 #define BUFFER_SIZE 1024
 
+
 /* Define device_buffer and other global data structures you will need here */
 static char * device_buffer;
 static char * message_pointer;
@@ -46,9 +47,8 @@ ssize_t simple_char_driver_read (struct file *pfile, char __user *buffer, size_t
     }
     int f_pos = (int) pfile->f_pos;
     //printk(KERN_INFO "simple_char_driver: reading, read %d bytes from the device", (int)length);
-	printk(KERN_INFO "simple_char_driver: f_pos(%d), offset(%d), buffer(%d)", f_pos, (int)(*offset), (int) sizeof(*device_buffer));
+	printk(KERN_INFO "simple_char_driver: f_pos(%d), offset(%d), buffer(%lu)", f_pos, (int)(*offset), strlen(device_buffer));
     copy_to_user(buffer, device_buffer, length);
-    printk(KERN_INFO "simple_char_driver: size of device buffer == %lu", strlen(device_buffer));
 
     return length;
 }
@@ -88,18 +88,12 @@ loff_t simple_char_driver_seek (struct file *pfile, loff_t offset, int whence)
 {
 	printk(KERN_INFO "simple_char_driver: seeking");
     // current position is set to the offset
-	if(whence == SEEK_SET) {
-        pfile->f_pos = offset;
-        return pfile->f_pos;
-    }
+	if(whence == SEEK_SET) { pfile->f_pos = offset; }
     // current position is incremented by offset bytes
-	if(whence == SEEK_CUR) {
-        pfile->f_pos += offset;
-        return pfile->f_pos;
-    }
+	if(whence == SEEK_CUR) { pfile->f_pos += offset; }
     // current position is set to offset bytes before the end of the file
-	// else if(whence == SEEK_END) pfile->f_pos =(offset)
-	return 0;
+	if(whence == SEEK_END) { pfile->f_pos = strlen(device_buffer) - abs(offset); }
+	return pfile->f_pos;
 }
 
 struct file_operations simple_char_driver_file_operations = {
@@ -123,6 +117,8 @@ static int simple_char_driver_init(void)
 	device_buffer = (char *) kmalloc(BUFFER_SIZE, GFP_KERNEL);
 	printk(KERN_INFO "simple_char_driver: registering major number 240 under name \"simple_char_driver\"");
 	register_chrdev(240, "simple_char_driver", &simple_char_driver_file_operations);
+    printk(KERN_INFO "simple_char_driver: init: buffer(%lu)", strlen(device_buffer));
+
 	return 0;
 }
 
