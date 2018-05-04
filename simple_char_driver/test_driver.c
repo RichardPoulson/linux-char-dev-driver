@@ -9,10 +9,10 @@
 
 char PromptInput(void);
 int ValidChoice(char choice);
-void ReadFromDevice();
-void WriteToDevice();
-void SeekIntoDevice();
-void CallRelatedFunction(char choice);
+void ReadFromDevice(char * buffer, FILE * device_file);
+void WriteToDevice(char * buffer, FILE * device_file);
+void SeekIntoDevice(char * buffer, FILE * device_file);
+void CallRelatedFunction(char choice, char * buffer, FILE * device_file);
 
 int main() {
 	char * buffer = (char *) malloc(32);
@@ -23,7 +23,7 @@ int main() {
 	while (1) {
 		choice = PromptInput();
 		while (ValidChoice(choice) == 0) { choice = PromptInput(); }
-		CallRelatedFunction(choice);
+		CallRelatedFunction(choice, buffer, device_file);
 	}
 
 
@@ -59,26 +59,41 @@ int ValidChoice(char choice) {
 	return 0;
 }
 
-void ReadFromDevice() {
+void ReadFromDevice(char * buffer, FILE * device_file) {
+	int num;
 	printf("How many bytes would you like to read from the file? ");
-	int num = getint();
+	scanf("%d", &num);
 	buffer = (char *) realloc(buffer, num);
 	printf("\n");
+	fgets(buffer, num, device_file);
+	printf("Data read from the device: %s\n", buffer);
 }
-void WriteToDevice() {
-	printf("Enter data you want to write to the device: ");
-	char a_word[50];
-	scanf ("%s", a_word);
-	printf("\n");
-    printf ("You entered: %s\n", a_word);
-}
-void SeekIntoDevice() {
 
+void WriteToDevice(char * buffer, FILE * device_file) {
+	printf("Enter data you want to write to the device: ");
+	char data[50];
+	scanf("%s", data);
+	printf("\n");
+	fputs(&data, device_file);
 }
-void CallRelatedFunction(char choice) {
-	if (choice == 'r') { ReadFromDevice(); }
-	if (choice == 'w') { WriteToDevice(); }
-	if (choice == 's') { SeekIntoDevice(); }
+
+void SeekIntoDevice(char * buffer, FILE * device_file) {
+	int offset;
+	int whence;
+	printf("Enter an offset value: ");
+	scanf("%d", &offset);
+	printf("\n");
+	printf("SEEK_SET == %d, SEEK_CUR == %d, SEEK_END == %d\n", SEEK_SET, SEEK_CUR, SEEK_END);
+	printf("Enter a value for whence (SEEK): ");
+	scanf("%d", &whence);
+	printf("\n");
+	fseek(device_file, offset, whence);
+}
+
+void CallRelatedFunction(char choice, char * buffer, FILE * device_file) {
+	if (choice == 'r') { ReadFromDevice(buffer, device_file); }
+	if (choice == 'w') { WriteToDevice(buffer, device_file); }
+	if (choice == 's') { SeekIntoDevice(buffer, device_file); }
 	if (choice == 'e') {
 		free(buffer);
 		exit(0);

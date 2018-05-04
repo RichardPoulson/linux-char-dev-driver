@@ -86,11 +86,22 @@ int simple_char_driver_close (struct inode *pinode, struct file *pfile)
 //== was loff_t* before, checked in fs.h and it should just be loff_t
 loff_t simple_char_driver_seek (struct file *pfile, loff_t offset, int whence)
 {
-	printk(KERN_INFO "simple_char_driver: seeking");
+	printk(KERN_INFO "simple_char_driver: seeking, offset(%d), whence(%d)", (int) offset, whence);
     // current position is set to the offset
-	if(whence == SEEK_SET) { pfile->f_pos = offset; }
+	if(whence == SEEK_SET) {
+        if( (offset<0) || (offset>strlen(device_buffer))) {
+            printk(KERN_ERR "simple_char_driver: invalid position specified for seek: \"%d\"", offset);
+        }
+        else { pfile->f_pos = offset; }
+    }
     // current position is incremented by offset bytes
-	if(whence == SEEK_CUR) { pfile->f_pos += offset; }
+	if(whence == SEEK_CUR) {
+        int new_offset = pfile->f_pos + offset;
+        if( (new_offset < 0) || (new_offset > strlen(device_buffer)) ) {
+            printk(KERN_ERR "simple_char_driver: invalid position specified for seek: \"%d\"", new_offset);
+        }
+        else { pfile->f_pos = new_offset; }
+    }
     // current position is set to offset bytes before the end of the file
 	if(whence == SEEK_END) { pfile->f_pos = strlen(device_buffer) - abs(offset); }
 	return pfile->f_pos;
