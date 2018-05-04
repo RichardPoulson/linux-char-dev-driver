@@ -90,7 +90,7 @@ loff_t simple_char_driver_seek (struct file *pfile, loff_t offset, int whence)
     // current position is set to the offset
 	if(whence == SEEK_SET) {
         if( (offset<0) || (offset>strlen(device_buffer))) {
-            printk(KERN_ERR "simple_char_driver: invalid position specified for seek: \"%d\"", (int)offset);
+            printk(KERN_ERR "simple_char_driver: invalid position: \"%d\"", (int)offset);
         }
         else { pfile->f_pos = offset; }
     }
@@ -98,7 +98,7 @@ loff_t simple_char_driver_seek (struct file *pfile, loff_t offset, int whence)
 	if(whence == SEEK_CUR) {
         int new_offset = pfile->f_pos + offset;
         if( (new_offset < 0) || (new_offset > strlen(device_buffer)) ) {
-            printk(KERN_ERR "simple_char_driver: invalid position specified for seek: \"%d\"", new_offset);
+            printk(KERN_ERR "simple_char_driver: invalid position: \"%d\"", new_offset);
         }
         else { pfile->f_pos = new_offset; }
     }

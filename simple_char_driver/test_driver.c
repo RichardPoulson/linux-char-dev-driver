@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <string.h>
 
+void EmptyStdIn(void);
 char PromptInput(void);
 int ValidChoice(char choice);
 void ReadFromDevice(char * buffer, FILE * device_file);
@@ -16,8 +17,7 @@ void CallRelatedFunction(char choice, char * buffer, FILE * device_file);
 
 int main() {
 	char * buffer = (char *) malloc(32);
-	char * data = "abcd1234\n";
-	FILE * device_file = fopen("/dev/simple_character_device","a+");
+	FILE * device_file = fopen("/dev/simple_character_device","r+");
 
 	char choice;
 	while (1) {
@@ -26,18 +26,12 @@ int main() {
 		while (ValidChoice(choice) == 0) { choice = PromptInput(); }
 		CallRelatedFunction(choice, buffer, device_file);
 	}
-	/*
-	fputs(data, device_file);
-	fseek(device_file, 0, SEEK_SET);
-	fgets(buffer, 9, device_file);
-	fclose(device_file);
-	printf("%s\n", buffer);
-	*/
 
     return (0);
 }
 
 char PromptInput(void) {
+	EmptyStdIn();
 	char input = "";
 	printf("\n");
 	printf("Press r to read from device\n");
@@ -48,6 +42,7 @@ char PromptInput(void) {
 	printf("Enter command: ");
 	scanf("%c", &input);
 	printf("\n");
+	// EmptyStdIn();
 	return input;
 }
 
@@ -60,33 +55,31 @@ int ValidChoice(char choice) {
 }
 
 void ReadFromDevice(char * buffer, FILE * device_file) {
+	EmptyStdIn();
 	int num;
 	printf("How many bytes would you like to read from the file? ");
 	scanf("%d", &num);
 	buffer = (char *) realloc(buffer, num);
 	printf("\n");
-	fgets(buffer, num, device_file);
+	fread(buffer, 1, num, device_file);
 	printf("Data read from the device: %s\n", buffer);
 }
 
 void WriteToDevice(char * buffer, FILE * device_file) {
-	char c;
-	while((c = getchar()) != '\n' && c != EOF) {}
+	EmptyStdIn();
+	char data[100];
 	printf("Enter data you want to write to the device: ");
-	char * data = (char *) malloc(32);
-	scanf("[^\n]%c", data);
+	gets(data);
 	printf("\n");
-	fwrite(&data, strlen(data), 1, device_file);
-	free(data);
-	while((c = getchar()) != '\n' && c != EOF) {}
+	fwrite (data , sizeof(char), strlen(data), device_file);
 }
 
 void SeekIntoDevice(char * buffer, FILE * device_file) {
+	EmptyStdIn();
 	int offset;
 	int whence;
 	printf("Enter an offset value: ");
 	scanf("%d", &offset);
-	printf("\n");
 	printf("SEEK_SET == %d, SEEK_CUR == %d, SEEK_END == %d\n", SEEK_SET, SEEK_CUR, SEEK_END);
 	printf("Enter a value for whence (SEEK): ");
 	scanf("%d", &whence);
@@ -102,4 +95,8 @@ void CallRelatedFunction(char choice, char * buffer, FILE * device_file) {
 		free(buffer);
 		exit(0);
 	}
+}
+void EmptyStdIn(void) {
+	char c;
+	while(c = getchar() != '\n' && c != EOF) {}
 }
