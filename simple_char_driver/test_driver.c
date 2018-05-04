@@ -21,24 +21,24 @@ int main() {
 
 	char choice;
 	while (1) {
+		choice = '?';
 		choice = PromptInput();
 		while (ValidChoice(choice) == 0) { choice = PromptInput(); }
 		CallRelatedFunction(choice, buffer, device_file);
 	}
-
-
+	/*
 	fputs(data, device_file);
 	fseek(device_file, 0, SEEK_SET);
 	fgets(buffer, 9, device_file);
 	fclose(device_file);
 	printf("%s\n", buffer);
-	free(buffer);
+	*/
 
     return (0);
 }
 
 char PromptInput(void) {
-	char input;
+	char input = "";
 	printf("\n");
 	printf("Press r to read from device\n");
 	printf("Press w to write to the device\n");
@@ -46,7 +46,7 @@ char PromptInput(void) {
 	printf("Press e to exit from the device\n");
 	printf("anything else to keep reading or writing from the device\n");
 	printf("Enter command: ");
-	input = getchar();
+	scanf("%c", &input);
 	printf("\n");
 	return input;
 }
@@ -70,11 +70,15 @@ void ReadFromDevice(char * buffer, FILE * device_file) {
 }
 
 void WriteToDevice(char * buffer, FILE * device_file) {
+	char c;
+	while((c = getchar()) != '\n' && c != EOF) {}
 	printf("Enter data you want to write to the device: ");
-	char data[50];
-	scanf("%s", data);
+	char * data = (char *) malloc(32);
+	scanf("[^\n]%c", data);
 	printf("\n");
-	fputs(&data, device_file);
+	fwrite(&data, strlen(data), 1, device_file);
+	free(data);
+	while((c = getchar()) != '\n' && c != EOF) {}
 }
 
 void SeekIntoDevice(char * buffer, FILE * device_file) {

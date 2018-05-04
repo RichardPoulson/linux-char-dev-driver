@@ -42,27 +42,27 @@ static int number_times_closed = 0; // number of times the device has been close
 
 ssize_t simple_char_driver_read (struct file *pfile, char __user *buffer, size_t length, loff_t *offset)
 {
-    if(length > (strlen(device_buffer) - (*offset))) {
+    int file_pos = (int) pfile->f_pos;
+    if((int)length > (strlen(device_buffer) - (*offset))) {
         length = (strlen(device_buffer) - (*offset));
     }
-    int f_pos = (int) pfile->f_pos;
+    printk(KERN_INFO "simple_char_driver: read: f_pos(%d), length(%d), offset(%d)", file_pos, (int)length, (int)(*offset));
     //printk(KERN_INFO "simple_char_driver: reading, read %d bytes from the device", (int)length);
-	printk(KERN_INFO "simple_char_driver: f_pos(%d), offset(%d), buffer(%lu)", f_pos, (int)(*offset), strlen(device_buffer));
     copy_to_user(buffer, device_buffer, length);
-
+    printk(KERN_INFO "simple_char_driver: read: read %d bytes from device", (int)length);
     return length;
 }
 
 ssize_t simple_char_driver_write (struct file *pfile, const char __user *buffer, size_t length, loff_t *offset)
 {
-    printk(KERN_INFO "fileAddress(%p), length(%d), offset(%d)", pfile, (int) length, (int) (*offset));
+    printk(KERN_INFO "simple_char_driver: write: length(%d), offset(%d)", (int)length, (int) (*offset));
 	/* *buffer is the userspace buffer where you are writing the data you want to be written in the device file*/
 	/* length is the length of the userspace buffer*/
 	/* current position of the opened file*/
 	/* copy_from_user function: destination is device_buffer and source is the userspace buffer *buffer */
     copy_from_user(device_buffer + *offset, buffer, length);
-    *offset += length;
-	printk(KERN_INFO "simple_char_driver: writing, wrote %d bytes to the device", (int)length);
+    *offset += (int)length;
+	printk(KERN_INFO "simple_char_driver: write: wrote %d bytes to device", (int)length);
 	return length;
 }
 
@@ -71,7 +71,7 @@ int simple_char_driver_open (struct inode *pinode, struct file *pfile)
     // keep track of how many times the file has been opened, and print the
     // number of times it's been opened
 	number_times_opened++; // device is opened, so increment the count
-	printk(KERN_INFO "simple_char_driver: device opened, has been opened %d time(s)", number_times_opened);
+	printk(KERN_INFO "simple_char_driver: open: has been opened %d time(s)", number_times_opened);
 	return 0;
 }
 
@@ -79,18 +79,18 @@ int simple_char_driver_close (struct inode *pinode, struct file *pfile)
 {
 	/* print to the log file that the device is closed and also print the number of times this device has been closed until now*/
 	number_times_closed++; // device closed, so increment the count
-	printk(KERN_INFO "simple_char_driver: device closed, has been closed %d time(s)", number_times_closed);
+	printk(KERN_INFO "simple_char_driver: close: has been closed %d time(s)", number_times_closed);
 	return 0;
 }
 
 //== was loff_t* before, checked in fs.h and it should just be loff_t
 loff_t simple_char_driver_seek (struct file *pfile, loff_t offset, int whence)
 {
-	printk(KERN_INFO "simple_char_driver: seeking, offset(%d), whence(%d)", (int) offset, whence);
+	printk(KERN_INFO "simple_char_driver: seeking: offset(%d), whence(%d)", (int)offset, (int)whence);
     // current position is set to the offset
 	if(whence == SEEK_SET) {
         if( (offset<0) || (offset>strlen(device_buffer))) {
-            printk(KERN_ERR "simple_char_driver: invalid position specified for seek: \"%d\"", offset);
+            printk(KERN_ERR "simple_char_driver: invalid position specified for seek: \"%d\"", (int)offset);
         }
         else { pfile->f_pos = offset; }
     }
@@ -122,13 +122,11 @@ static int simple_char_driver_init(void)
 	/* print to the log file that the init function is called.*/
 	/* register the device */
 	// register_chrdev(unsigned int major, const char * name, const struct file_operations * fops););
-	printk(KERN_INFO "simple_char_driver: allocating memory space for device_buffer");
+	printk(KERN_INFO "simple_char_driver: init: allocating memory and registering device");
     // GFP_KERNEL: This is a normal allocation and might block. This is the flag
     // to use in process context code when it is safe to sleep.
 	device_buffer = (char *) kmalloc(BUFFER_SIZE, GFP_KERNEL);
-	printk(KERN_INFO "simple_char_driver: registering major number 240 under name \"simple_char_driver\"");
 	register_chrdev(240, "simple_char_driver", &simple_char_driver_file_operations);
-    printk(KERN_INFO "simple_char_driver: init: buffer(%lu)", strlen(device_buffer));
 
 	return 0;
 }
@@ -137,9 +135,8 @@ static void simple_char_driver_exit(void)
 {
 	/* print to the log file that the exit function is called.*/
 	/* unregister  the device using the register_chrdev() function. */
-	printk(KERN_INFO "simple_char_driver: freeing memory allocated for device buffer");
+	printk(KERN_INFO "simple_char_driver: exit: freeing memor and unregistering device");
 	kfree(device_buffer);
-	printk(KERN_INFO "simple_char_driver: un-registering major number 240 under name \"simple_char_driver\"");
 	unregister_chrdev(240, "simple_char_driver");
 }
 
